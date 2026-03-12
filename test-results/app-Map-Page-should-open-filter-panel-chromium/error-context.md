@@ -59,18 +59,20 @@
             - button "Apply" [ref=e51] [cursor=pointer]
             - button "Reset" [ref=e52] [cursor=pointer]
       - generic [ref=e53]:
-        - generic [ref=e54]: "0"
+        - generic [ref=e54]: 9,823
         - generic [ref=e55]: Aircraft Tracked
-        - generic [ref=e57]: "Source: UNKNOWN"
-      - generic [ref=e58]:
-        - heading "Planes Above Me" [level=3] [ref=e59]
-        - generic [ref=e60]:
-          - combobox [ref=e61]:
+        - generic [ref=e56]:
+          - generic [ref=e57]: "Source: CACHE"
+          - generic [ref=e58]: "Updated: 4:34:25 PM"
+      - generic [ref=e59]:
+        - heading "Planes Above Me" [level=3] [ref=e60]
+        - generic [ref=e61]:
+          - combobox [ref=e62]:
             - option "10 miles"
             - option "25 miles" [selected]
             - option "50 miles"
-          - button "Find Nearby" [ref=e62] [cursor=pointer]
-  - button "Open Next.js Dev Tools" [ref=e68] [cursor=pointer]:
-    - img [ref=e69]
-  - alert [ref=e72]
+          - button "Find Nearby" [ref=e63] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e69] [cursor=pointer]:
+    - img [ref=e70]
+  - alert [ref=e73]
 ```

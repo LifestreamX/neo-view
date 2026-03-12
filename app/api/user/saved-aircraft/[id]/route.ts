@@ -10,10 +10,9 @@ export async function DELETE(
   context: { params: { id: string } } | { params: Promise<{ id: string }> }
 ) {
   // Support both Promise and non-Promise params (Next.js 16+ Turbopack)
-  const paramsObj = 'then' in context.params
-    ? await context.params
-    : context.params;
-  const { id } = paramsObj;
+  const paramsObj =
+    'then' in context.params ? await context.params : context.params
+  const { id } = paramsObj
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user) {
