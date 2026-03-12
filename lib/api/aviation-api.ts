@@ -18,7 +18,7 @@ const CACHE_TTL = 600000 // 10 minutes - longer cache to avoid hitting rate limi
 const MAX_RETRIES = 2
 const INITIAL_RETRY_DELAY = 2000 // 2 seconds
 const OPENSKY_TOKEN_CACHE_KEY = 'opensky_token'
-const TOKEN_ERROR_COOLDOWN = 5 * 60 * 1000 // 5 minutes cooldown after token 403
+const TOKEN_ERROR_COOLDOWN = 60 * 1000 // 1 minute cooldown after token failures (shorter for faster recovery)
 
 // Rate limiting for OpenSky API
 // Anonymous: 10 seconds between requests minimum
@@ -100,47 +100,49 @@ export class AviationAPIService {
         if (!accessToken || now > tokenExpiresAt) {
           // Avoid hammering token endpoint if recently failed
           if (tokenErrorUntil && now < tokenErrorUntil) {
-            logger.error(
-              '[OpenSky OAuth2] Token endpoint in cooldown, skipping token fetch'
+            logger.warn(
+              '[OpenSky OAuth2] Token endpoint in cooldown, skipping token fetch; falling back to anonymous requests'
             )
-            throw new Error('Token endpoint in cooldown')
-          }
-          try {
-            logger.debug('[OpenSky OAuth2] Fetching new token...')
-            const tokenResp = await axios.post(
-              OPENSKY_TOKEN_URL,
-              new URLSearchParams({
-                grant_type: 'client_credentials',
-                client_id: clientId,
-                client_secret: clientSecret,
-              }),
-              {
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                timeout: 10000,
-              }
-            )
-            accessToken = tokenResp.data.access_token
-            const expiresIn = tokenResp.data.expires_in || 1800 // seconds
-            // Refresh 30s before expiry
-            tokenExpiresAt = now + (expiresIn - 30) * 1000
-            nodeCache.set(OPENSKY_TOKEN_CACHE_KEY, accessToken, expiresIn - 30)
-            nodeCache.set(
-              `${OPENSKY_TOKEN_CACHE_KEY}_expires`,
-              tokenExpiresAt,
-              expiresIn - 30
-            )
-            logger.info(
-              `[OpenSky OAuth2] Obtained new token, expires in ${expiresIn}s (at ${tokenExpiresAt})`
-            )
-          } catch (err: any) {
-            logger.error(
-              '[OpenSky OAuth2] Failed to fetch token',
-              err?.response?.data || err
-            )
-            tokenErrorUntil = now + TOKEN_ERROR_COOLDOWN
-            throw new Error('Failed to fetch OpenSky OAuth2 token')
+            // leave accessToken null to use anonymous access
+          } else {
+            try {
+              logger.debug('[OpenSky OAuth2] Fetching new token...')
+              const tokenResp = await axios.post(
+                OPENSKY_TOKEN_URL,
+                new URLSearchParams({
+                  grant_type: 'client_credentials',
+                  client_id: clientId,
+                  client_secret: clientSecret,
+                }),
+                {
+                  headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                  },
+                  timeout: 10000,
+                }
+              )
+              accessToken = tokenResp.data.access_token
+              const expiresIn = tokenResp.data.expires_in || 1800 // seconds
+              // Refresh 30s before expiry
+              tokenExpiresAt = now + (expiresIn - 30) * 1000
+              nodeCache.set(OPENSKY_TOKEN_CACHE_KEY, accessToken, expiresIn - 30)
+              nodeCache.set(
+                `${OPENSKY_TOKEN_CACHE_KEY}_expires`,
+                tokenExpiresAt,
+                expiresIn - 30
+              )
+              logger.info(
+                `[OpenSky OAuth2] Obtained new token, expires in ${expiresIn}s (at ${tokenExpiresAt})`
+              )
+            } catch (err: any) {
+              logger.error(
+                '[OpenSky OAuth2] Failed to fetch token',
+                err?.response?.data || err
+              )
+              tokenErrorUntil = now + TOKEN_ERROR_COOLDOWN
+              // Do not throw here; fall back to anonymous access instead of failing the whole request
+              accessToken = null
+            }
           }
         }
         logger.debug(
