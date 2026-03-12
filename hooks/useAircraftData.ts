@@ -17,7 +17,22 @@ export function useAircraftData(autoRefresh = true, interval = 10000) {
         throw new Error(data.error || 'Failed to fetch aircraft')
       }
 
-      setAircraft(data.aircraft || [])
+      // If API returned an empty array, skip updating to avoid transient
+      // empty payloads causing UI flicker (keep previous state until
+      // we receive a non-empty update).
+      if (!data.aircraft || data.aircraft.length === 0) {
+        console.warn('Empty aircraft payload received — keeping previous aircraft state')
+      } else {
+        // Merge incoming aircraft with the existing list to avoid
+        // removing markers for aircraft that are briefly absent in a
+        // single poll (e.g., SITL or transient API issues).
+        setAircraft(prev => {
+          const map = new Map<string, NormalizedAircraft>()
+          prev.forEach(a => map.set(a.icao24, a))
+          data.aircraft.forEach((a: NormalizedAircraft) => map.set(a.icao24, a))
+          return Array.from(map.values())
+        })
+      }
       setError(null)
     } catch (err: any) {
       setError(err.message)

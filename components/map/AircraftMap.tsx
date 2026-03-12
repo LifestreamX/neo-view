@@ -206,8 +206,9 @@ export function AircraftMap({
         const staleCount = ((marker as any)._staleCount || 0) + 1
         ;(marker as any)._staleCount = staleCount
 
-        // Only remove after 3 consecutive updates without seeing this aircraft
-        if (staleCount > 3) {
+        // Only remove after several consecutive updates without seeing this aircraft
+        // (increased threshold to reduce flicker from transient/partial API responses)
+        if (staleCount > 6) {
           if (showClusters && clusterGroupRef.current) {
             clusterGroupRef.current.removeLayer(marker)
           } else if (markerLayerRef.current) {
