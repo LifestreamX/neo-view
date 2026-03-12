@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { NormalizedAircraft } from '@/types/aircraft'
 
-export function useAircraftData(autoRefresh = true, interval = 10000) {
+export function useAircraftData(autoRefresh = true, interval = 30000) {
   const [aircraft, setAircraft] = useState<NormalizedAircraft[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +21,9 @@ export function useAircraftData(autoRefresh = true, interval = 10000) {
       // empty payloads causing UI flicker (keep previous state until
       // we receive a non-empty update).
       if (!data.aircraft || data.aircraft.length === 0) {
-        console.warn('Empty aircraft payload received — keeping previous aircraft state')
+        console.warn(
+          'Empty aircraft payload received — keeping previous aircraft state'
+        )
       } else {
         // Merge incoming aircraft with the existing list to avoid
         // removing markers for aircraft that are briefly absent in a
