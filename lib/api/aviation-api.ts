@@ -73,7 +73,8 @@ export class AviationAPIService {
 
       // Prepare axios config
       const axiosConfig: any = {
-        timeout: 15000,
+        // Increase timeout to 60s to avoid premature aborts from slow egress
+        timeout: 60000,
         headers: {
           'User-Agent': 'StratoView/1.0',
         },
@@ -118,14 +119,19 @@ export class AviationAPIService {
                   headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                   },
-                  timeout: 10000,
+                  // Token fetch can be slow from some hosts; allow longer for retries
+                  timeout: 60000,
                 }
               )
               accessToken = tokenResp.data.access_token
               const expiresIn = tokenResp.data.expires_in || 1800 // seconds
               // Refresh 30s before expiry
               tokenExpiresAt = now + (expiresIn - 30) * 1000
-              nodeCache.set(OPENSKY_TOKEN_CACHE_KEY, accessToken, expiresIn - 30)
+              nodeCache.set(
+                OPENSKY_TOKEN_CACHE_KEY,
+                accessToken,
+                expiresIn - 30
+              )
               nodeCache.set(
                 `${OPENSKY_TOKEN_CACHE_KEY}_expires`,
                 tokenExpiresAt,
