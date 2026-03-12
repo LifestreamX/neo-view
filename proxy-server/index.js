@@ -17,15 +17,23 @@ app.post('/opensky-token', async (req, res) => {
     params.append('client_id', process.env.OPENSKY_CLIENT_ID)
     params.append('client_secret', process.env.OPENSKY_CLIENT_SECRET)
 
-    const resp = await axios.post(process.env.OPENSKY_TOKEN_URL, params.toString(), {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: 20000,
-    })
+    const resp = await axios.post(
+      process.env.OPENSKY_TOKEN_URL,
+      params.toString(),
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 20000,
+      }
+    )
 
     return res.json(resp.data)
   } catch (err) {
+    // Log the error for debugging
+    console.error('OpenSky token error:', err)
     const status = err.response?.status || 500
-    return res.status(status).json({ error: err.message, data: err.response?.data })
+    return res
+      .status(status)
+      .json({ error: err.message, data: err.response?.data })
   }
 })
 
@@ -44,7 +52,9 @@ app.get('/opensky-states', async (req, res) => {
     return res.json(resp.data)
   } catch (err) {
     const status = err.response?.status || 500
-    return res.status(status).json({ error: err.message, data: err.response?.data })
+    return res
+      .status(status)
+      .json({ error: err.message, data: err.response?.data })
   }
 })
 
