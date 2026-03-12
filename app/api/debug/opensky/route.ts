@@ -8,7 +8,6 @@ const OPENSKY_API_URL = 'https://opensky-network.org/api/states/all'
 const OPENSKY_TOKEN_URL =
   process.env.OPENSKY_TOKEN_URL ||
   'https://opensky-network.org/auth/realms/opensky/protocol/openid-connect/token'
-const OPENSKY_PROXY_URL = process.env.OPENSKY_PROXY_URL || ''
 
 export async function GET() {
   try {
@@ -21,24 +20,25 @@ export async function GET() {
 
     // Attempt a quick token acquisition check if creds present
     let tokenFetchAttempt = null
-    if (!tokenCached) {
+    if (
+      !tokenCached &&
+      process.env.OPENSKY_CLIENT_ID &&
+      process.env.OPENSKY_CLIENT_SECRET
+    ) {
       try {
-        if (OPENSKY_PROXY_URL) {
-          const proxyBase = OPENSKY_PROXY_URL.replace(/\/$/, '')
-          const resp = await axios.post(`${proxyBase}/opensky-token`, {}, { timeout: 20000 })
-          tokenFetchAttempt = { status: 'ok', body: !!resp.data }
-        } else if (process.env.OPENSKY_CLIENT_ID && process.env.OPENSKY_CLIENT_SECRET) {
-          const params = new URLSearchParams()
-          params.append('grant_type', 'client_credentials')
-          params.append('client_id', process.env.OPENSKY_CLIENT_ID as string)
-          params.append('client_secret', process.env.OPENSKY_CLIENT_SECRET as string)
+        const params = new URLSearchParams()
+        params.append('grant_type', 'client_credentials')
+        params.append('client_id', process.env.OPENSKY_CLIENT_ID as string)
+        params.append(
+          'client_secret',
+          process.env.OPENSKY_CLIENT_SECRET as string
+        )
 
-          const resp = await axios.post(OPENSKY_TOKEN_URL, params.toString(), {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            timeout: 10000,
-          })
-          tokenFetchAttempt = { status: 'ok', body: !!resp.data }
-        }
+        const resp = await axios.post(OPENSKY_TOKEN_URL, params.toString(), {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          timeout: 10000,
+        })
+        tokenFetchAttempt = { status: 'ok', body: !!resp.data }
       } catch (err: any) {
         tokenFetchAttempt = {
           status: 'error',
@@ -68,7 +68,6 @@ export async function GET() {
         hasBasicAuth: !!(
           process.env.OPENSKY_USERNAME && process.env.OPENSKY_PASSWORD
         ),
-        hasProxy: !!OPENSKY_PROXY_URL,
       },
     })
   } catch (err: any) {

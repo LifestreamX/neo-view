@@ -12,7 +12,7 @@ const OPENSKY_API_URL = 'https://opensky-network.org/api/states/all'
 const OPENSKY_TOKEN_URL =
   process.env.OPENSKY_TOKEN_URL ||
   'https://opensky-network.org/auth/realms/opensky/protocol/openid-connect/token'
-const OPENSKY_PROXY_URL = process.env.OPENSKY_PROXY_URL || ''
+// OPENSKY_PROXY_URL removed, reverting to direct OpenSky usage
 const CACHE_KEY = 'aircraft_data'
 const CACHE_TTL = 600000 // 10 minutes - longer cache to avoid hitting rate limits
 const MAX_RETRIES = 2
@@ -84,46 +84,14 @@ export class AviationAPIService {
       const clientSecret = process.env.OPENSKY_CLIENT_SECRET
       let accessToken: string | null = null
 
-      if (OPENSKY_PROXY_URL) {
-        const proxyBase = OPENSKY_PROXY_URL.replace(/\/$/, '')
-        logger.debug('[OpenSky OAuth2] Using proxy at ' + proxyBase)
-        // Try cached token first
-        accessToken = nodeCache.get<string>(OPENSKY_TOKEN_CACHE_KEY) || null
-        let tokenExpiresAt = nodeCache.get<number>(`${OPENSKY_TOKEN_CACHE_KEY}_expires`) || 0
-        const now = Date.now()
-        logger.debug(`[OpenSky OAuth2] Cached token: ${!!accessToken}, expires at: ${tokenExpiresAt}, now: ${now}`)
-        if (!accessToken || now > tokenExpiresAt) {
-          if (tokenErrorUntil && now < tokenErrorUntil) {
-            logger.error('[OpenSky OAuth2] Token endpoint in cooldown, skipping token fetch')
-            throw new Error('Token endpoint in cooldown')
-          }
-          try {
-            logger.debug('[OpenSky OAuth2] Fetching new token via proxy...')
-            const tokenResp = await axios.post(`${proxyBase}/opensky-token`, {}, { timeout: 20000 })
-            accessToken = tokenResp.data?.access_token || null
-            const expiresIn = tokenResp.data?.expires_in || 1800
-            tokenExpiresAt = now + (expiresIn - 30) * 1000
-            nodeCache.set(OPENSKY_TOKEN_CACHE_KEY, accessToken, expiresIn - 30)
-            nodeCache.set(`${OPENSKY_TOKEN_CACHE_KEY}_expires`, tokenExpiresAt, expiresIn - 30)
-            logger.info(`[OpenSky OAuth2] Obtained new token via proxy, expires in ${expiresIn}s`)
-          } catch (err: any) {
-            logger.error('[OpenSky OAuth2] Failed to fetch token via proxy', err?.response?.data || err)
-            tokenErrorUntil = now + TOKEN_ERROR_COOLDOWN
-            throw new Error('Failed to fetch OpenSky OAuth2 token via proxy')
-          }
-        }
-        logger.debug(`[OpenSky OAuth2] Using Bearer token: ${accessToken ? accessToken.slice(0, 12) + '...' : 'none'}`)
-        axiosConfig.headers = {
-          ...axiosConfig.headers,
-          Authorization: `Bearer ${accessToken}`,
-        }
-      } else if (clientId && clientSecret) {
+      if (clientId && clientSecret) {
         logger.debug(
           `[OpenSky OAuth2] Using clientId: ${clientId.slice(0, 6)}... (secret hidden)`
         )
         // Try to get cached token
         accessToken = nodeCache.get<string>(OPENSKY_TOKEN_CACHE_KEY) || null
-        let tokenExpiresAt = nodeCache.get<number>(`${OPENSKY_TOKEN_CACHE_KEY}_expires`) || 0
+        let tokenExpiresAt =
+          nodeCache.get<number>(`${OPENSKY_TOKEN_CACHE_KEY}_expires`) || 0
         const now = Date.now()
         logger.debug(
           `[OpenSky OAuth2] Cached token: ${!!accessToken}, expires at: ${tokenExpiresAt}, now: ${now}`
@@ -190,13 +158,16 @@ export class AviationAPIService {
 
       // Update last request time before making the request
       lastOpenSkyRequestTime = Date.now()
-      const requestUrl = OPENSKY_PROXY_URL ? `${OPENSKY_PROXY_URL.replace(/\/$/, '')}/opensky-states` : OPENSKY_API_URL
+      const requestUrl = OPENSKY_API_URL
       logger.debug(`[OpenSky API] Requesting: ${requestUrl}`)
-      logger.debug(`[OpenSky API] Headers: ${JSON.stringify(axiosConfig.headers)}`)
+      logger.debug(
+        `[OpenSky API] Headers: ${JSON.stringify(axiosConfig.headers)}`
+      )
       try {
-        const response = OPENSKY_PROXY_URL
-          ? await axios.get<OpenSkyResponse>(requestUrl, { params: { access_token: accessToken }, timeout: 20000, headers: axiosConfig.headers })
-          : await axios.get<OpenSkyResponse>(OPENSKY_API_URL, axiosConfig)
+        const response = await axios.get<OpenSkyResponse>(
+          requestUrl,
+          axiosConfig
+        )
         logger.debug('[OpenSky API] Response received')
         if (response.data && (response.data as any).states) {
           logger.info(
