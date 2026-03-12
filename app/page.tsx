@@ -9,7 +9,7 @@ export default function Home() {
           <p className="text-xl text-blue-200 mb-12">
             Real-Time Global Aircraft Tracking & Visualization
           </p>
-          <div className="flex justify-center gap-4 mt-4">
+          <div className="flex justify-center gap-4 mt-8">
             <Link
               href="/map"
               className="bg-aviation-blue hover:bg-aviation-light text-white font-bold py-3 px-8 rounded-lg transition duration-300"
