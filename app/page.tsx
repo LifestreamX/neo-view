@@ -5,7 +5,9 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-aviation-dark via-blue-900 to-aviation-dark flex items-center">
       <div className="container mx-auto px-4 py-32 flex flex-col items-center max-w-4xl">
         <div className="text-center w-full space-y-6">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">✈️ STRATOVIEW</h1>
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+            ✈️ STRATOVIEW
+          </h1>
           <p className="text-lg md:text-xl text-blue-200 mb-12">
             Real-Time Global Aircraft Tracking & Visualization
           </p>
@@ -25,7 +27,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-12 gap-y-8 w-full">
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-12 gap-y-8 w-full">
           <div className="bg-white/10 backdrop-blur-sm p-8 rounded-lg text-center">
             <h3 className="text-2xl font-bold text-white mb-2">
               🌍 Global Coverage
