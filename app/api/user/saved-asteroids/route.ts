@@ -1,36 +1,38 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { prisma } from '@/lib/db/prisma'
+import { authOptions } from '@/lib/auth/auth-options'
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions)
   if (!session || !session.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const savedAsteroids = await prisma.savedAsteroid.findMany({
-    where: { userEmail: session.user.email },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  return NextResponse.json({ savedAsteroids });
+  // Find user by email
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: { favoriteAsteroids: true },
+  })
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  }
+  return NextResponse.json({ savedAsteroids: user.favoriteAsteroids })
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions)
   if (!session || !session.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { id } = await request.json();
+  const { id } = await request.json()
   if (!id) {
-    return NextResponse.json({ error: 'Missing asteroid id' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing asteroid id' }, { status: 400 })
   }
 
-  await prisma.savedAsteroid.delete({
+  await prisma.favoriteAsteroid.delete({
     where: { id },
-  });
-
-  return NextResponse.json({ success: true });
+  })
+  return NextResponse.json({ success: true })
 }

@@ -1,12 +1,26 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
 
 export function Navigation() {
   const { data: session } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-[1000] bg-black/40 backdrop-blur-md shadow-lg">
@@ -32,7 +46,10 @@ export function Navigation() {
             </Link>
 
             {session ? (
-              <div className="relative flex items-center space-x-2">
+              <div
+                className="relative flex items-center space-x-2"
+                ref={menuRef}
+              >
                 {session.user?.image && (
                   <button
                     className="focus:outline-none"
