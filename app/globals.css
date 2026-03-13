@@ -91,6 +91,22 @@ body::before {
   z-index: 0;
 }
 
+/* NeoView purple scrollbar for modal and other UI elements */
+.neo-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--space-purple), 0.85) transparent;
+}
+.neo-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.neo-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.neo-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(var(--space-purple), 0.85);
+  border-radius: 9999px;
+}
+
 /* Hero sky background (gradient + subtle clouds overlay) */
 .hero-bg {
   background-image:

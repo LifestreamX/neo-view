@@ -29,6 +29,7 @@ export default function AsteroidsPage() {
     start: new Date(),
     end: addDays(new Date(), 7),
   })
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
 
   const fetchAsteroids = async (noCache = false) => {
     try {
@@ -58,6 +59,36 @@ export default function AsteroidsPage() {
       setError(err instanceof Error ? err.message : 'Failed to fetch asteroids')
     } finally {
       setLoading(false)
+    }
+    // Fetch favorites
+    try {
+      const favRes = await fetch('/api/user/saved-asteroids')
+      if (favRes.ok) {
+        const favData = await favRes.json()
+        setFavoriteIds(
+          new Set((favData.savedAsteroids || []).map((a: any) => a.asteroidId))
+        )
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  const handleToggleFavorite = async (asteroid: NormalizedAsteroid) => {
+    if (favoriteIds.has(asteroid.id)) return // Already favorite
+    try {
+      const res = await fetch('/api/user/saved-asteroids', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asteroidId: asteroid.id,
+          asteroidName: asteroid.name,
+        }),
+      })
+      if (res.ok) {
+        setFavoriteIds(prev => new Set(prev).add(asteroid.id))
+      }
+    } catch (e) {
+      // ignore
     }
   }
 
@@ -137,6 +168,8 @@ export default function AsteroidsPage() {
               <AsteroidList
                 asteroids={asteroids}
                 onViewDetails={handleViewDetails}
+                onToggleFavorite={handleToggleFavorite}
+                favoriteIds={favoriteIds}
               />
             </TabsContent>
 
@@ -159,6 +192,10 @@ export default function AsteroidsPage() {
         asteroid={selectedAsteroid}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onToggleFavorite={handleToggleFavorite}
+        isFavorite={
+          selectedAsteroid ? favoriteIds.has(selectedAsteroid.id) : false
+        }
       />
     </div>
   )

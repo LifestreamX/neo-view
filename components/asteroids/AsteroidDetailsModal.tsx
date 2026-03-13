@@ -19,6 +19,7 @@ import {
   Gauge,
   Moon,
   Orbit,
+  X,
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -56,9 +57,12 @@ export function AsteroidDetailsModal({
     }
   }
 
+  const formatNum = (n?: number, d = 3) =>
+    typeof n === 'number' && !Number.isNaN(n) ? n.toFixed(d) : 'N/A'
+
   return (
     <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-purple-500/30">
+      <DialogContent className="neo-scrollbar max-w-3xl max-h-[calc(100vh-8rem)] sm:max-h-[calc(100vh-38rem)] overflow-y-auto bg-slate-900 border-purple-500/30 mx-auto">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="space-y-2">
@@ -75,14 +79,24 @@ export function AsteroidDetailsModal({
                 NASA NEO ID: {asteroid.id}
               </DialogDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onToggleFavorite?.(asteroid)}
-              className="hover:bg-purple-500/20"
-            >
-              <span className="text-2xl">{isFavorite ? '⭐' : '☆'}</span>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleFavorite?.(asteroid)}
+                className="hover:bg-purple-500/20"
+              >
+                <span className="text-2xl">{isFavorite ? '⭐' : '☆'}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onClose()}
+                className="hover:bg-purple-500/10 text-slate-300"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 

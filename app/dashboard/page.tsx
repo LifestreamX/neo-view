@@ -1,14 +1,16 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { AsteroidDetailsModal } from '@/components/asteroids/AsteroidDetailsModal'
+import { NormalizedAsteroid } from '@/types/asteroid'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Navigation } from '@/components/ui/Navigation'
 
 interface SavedAsteroid {
   id: string
-  referenceId?: string
-  name?: string | null
+  asteroidId?: string
+  asteroidName?: string
   notes?: string | null
   createdAt: string
 }
@@ -18,6 +20,9 @@ export default function DashboardPage() {
   const router = useRouter()
   const [savedAsteroids, setSavedAsteroids] = useState<SavedAsteroid[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedAsteroid, setSelectedAsteroid] =
+    useState<NormalizedAsteroid | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -48,10 +53,11 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/user/saved-asteroids/${id}`, {
+      const response = await fetch(`/api/user/saved-asteroids`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
       })
-
       if (response.ok) {
         setSavedAsteroids(savedAsteroids.filter(a => a.id !== id))
       }
@@ -107,7 +113,7 @@ export default function DashboardPage() {
                 >
                   <div>
                     <h3 className="text-white font-bold text-lg">
-                      {item.name || item.referenceId || 'Unknown'}
+                      {item.asteroidName || 'Unknown'}
                     </h3>
                     {item.notes && (
                       <p className="text-purple-300 text-sm mt-2">
@@ -115,14 +121,42 @@ export default function DashboardPage() {
                       </p>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition duration-300"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        if (!item.asteroidId) return
+                        try {
+                          const res = await fetch(
+                            `/api/asteroids/${item.asteroidId}`
+                          )
+                          if (!res.ok) return
+                          const data = await res.json()
+                          setSelectedAsteroid(data.asteroid)
+                          setIsModalOpen(true)
+                        } catch (e) {
+                          console.error('Failed to load asteroid details', e)
+                        }
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded transition duration-300"
+                    >
+                      View Details
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded transition duration-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
+              {/* Asteroid Details Modal */}
+              <AsteroidDetailsModal
+                asteroid={selectedAsteroid as any}
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                isFavorite={true}
+              />
             </div>
           )}
         </div>
