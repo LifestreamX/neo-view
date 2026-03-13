@@ -72,9 +72,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-
-        {/* Additional info */}
-        {/* ...existing code... */}
       </div>
     </main>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NormalizedAsteroid, AsteroidFilters } from '@/types/asteroid'
 import { AsteroidCard } from './AsteroidCard'
 import { Input } from '@/components/ui/input'
@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Card } from '@/components/ui/card'
-import { Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface AsteroidListProps {
   asteroids: NormalizedAsteroid[]
@@ -16,6 +17,8 @@ interface AsteroidListProps {
   onToggleFavorite?: (asteroid: NormalizedAsteroid) => void
   favoriteIds?: Set<string>
 }
+
+const ITEMS_PER_PAGE = 12
 
 export function AsteroidList({
   asteroids,
@@ -29,6 +32,7 @@ export function AsteroidList({
     minDiameter: undefined,
     maxDiameter: undefined,
   })
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Filter asteroids based on search and filters
   const filteredAsteroids = asteroids.filter(asteroid => {
@@ -63,6 +67,18 @@ export function AsteroidList({
 
     return true
   })
+
+  // Reset page when search/filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filters])
+
+  const totalPages = Math.ceil(filteredAsteroids.length / ITEMS_PER_PAGE) || 1
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const asteroidsToShow = filteredAsteroids.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  )
 
   const hazardousCount = filteredAsteroids.filter(
     a => a.isPotentiallyHazardous
@@ -144,15 +160,43 @@ export function AsteroidList({
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-400">
           Showing{' '}
-          <span className="text-purple-200 font-medium">
-            {filteredAsteroids.length}
+          <span className="text-purple-200 font-medium font-mono">
+            {startIndex + 1}-
+            {Math.min(startIndex + ITEMS_PER_PAGE, filteredAsteroids.length)}
           </span>{' '}
           of{' '}
-          <span className="text-purple-200 font-medium">
-            {asteroids.length}
+          <span className="text-purple-200 font-medium font-mono">
+            {filteredAsteroids.length}
           </span>{' '}
           asteroids
         </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="border-purple-500/30 hover:bg-purple-500/10"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-slate-400">
+            Page{' '}
+            <span className="text-purple-200 font-mono">{currentPage}</span> of{' '}
+            <span className="text-purple-200 font-mono">{totalPages}</span>
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCurrentPage(prev => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages}
+            className="border-purple-500/30 hover:bg-purple-500/10"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Asteroid Grid */}
@@ -161,16 +205,86 @@ export function AsteroidList({
           <p className="text-slate-400">No asteroids match your filters</p>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAsteroids.map(asteroid => (
-            <AsteroidCard
-              key={asteroid.id}
-              asteroid={asteroid}
-              onViewDetails={onViewDetails}
-              onToggleFavorite={onToggleFavorite}
-              isFavorite={favoriteIds.has(asteroid.id)}
-            />
-          ))}
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {asteroidsToShow.map(asteroid => (
+              <AsteroidCard
+                key={asteroid.id}
+                asteroid={asteroid}
+                onViewDetails={onViewDetails}
+                onToggleFavorite={onToggleFavorite}
+                isFavorite={favoriteIds.has(asteroid.id)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination Bottom */}
+          <div className="flex flex-col items-center gap-4 py-4 border-t border-purple-500/10">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCurrentPage(prev => Math.max(1, prev - 1))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                disabled={currentPage === 1}
+                className="border-purple-500/30 hover:bg-purple-500/10 text-purple-200"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                  let pageNum = i + 1
+                  if (totalPages > 5) {
+                    if (currentPage > 3) {
+                      pageNum = currentPage - 2 + i
+                      if (pageNum > totalPages) pageNum = totalPages - (4 - i)
+                    }
+                  }
+                  if (pageNum <= 0 || pageNum > totalPages) return null
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => {
+                        setCurrentPage(pageNum)
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                      className={
+                        currentPage === pageNum
+                          ? 'bg-purple-600'
+                          : 'text-slate-400 hover:text-purple-200'
+                      }
+                    >
+                      {pageNum}
+                    </Button>
+                  )
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                disabled={currentPage === totalPages}
+                className="border-purple-500/30 hover:bg-purple-500/10 text-purple-200"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Showing {startIndex + 1} to{' '}
+              {Math.min(startIndex + ITEMS_PER_PAGE, filteredAsteroids.length)}{' '}
+              of {filteredAsteroids.length} objects
+            </p>
+          </div>
         </div>
       )}
     </div>
